@@ -1,14 +1,19 @@
 import SEO from "@/components/SEO";
+import { client } from "@/lib/prismic";
 import { GetServerSideProps } from "next";
 import React from "react";
 import { Title } from "../styles/pages/Home";
+import Prismic from "prismic-javascript";
+import Link from "next/link";
+import PrismicDOM from "prismic-dom";
+import { Document } from "prismic-javascript/types/documents";
 
-interface IProduct {
-  id: string;
-  title: string;
-}
+// interface IProduct {
+//   id: string;
+//   title: string;
+// }
 interface HomeProps {
-  recommendedProducts: IProduct[];
+  recommendedProducts: Document[];
 }
 export default function Home({ recommendedProducts }: HomeProps) {
   async function handleSum() {
@@ -20,11 +25,19 @@ export default function Home({ recommendedProducts }: HomeProps) {
       <div>
         <SEO title="You ecomerce" sholdExcludeTitleSuffix />
         <section>
-          <Title>Hello</Title>
+          <Title>Products</Title>
           <ul>
             {recommendedProducts.map((recommendedProduct) => {
               return (
-                <li key={recommendedProduct.id}>{recommendedProduct.title}</li>
+                <li key={recommendedProduct.id}>
+                  <Link href={`/catalog/products/${recommendedProduct.uid}`}>
+                    <a>
+                      {PrismicDOM.RichText.asText(
+                        recommendedProduct.data.title
+                      )}
+                    </a>
+                  </Link>
+                </li>
               );
             })}
           </ul>
@@ -36,12 +49,17 @@ export default function Home({ recommendedProducts }: HomeProps) {
 }
 
 export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
-  const response = await fetch(`${process.env.API_URL}/recommended`);
-  const recommendedProducts = await response.json();
+  const recommendedProducts = await client().query([
+    Prismic.Predicates.at("document.type", "product"),
+  ]);
+
+  console.log(recommendedProducts.results);
+  // const response = await fetch(`${process.env.API_URL}/recommended`);
+  // const recommendedProducts = await response.json();
 
   return {
     props: {
-      recommendedProducts,
+      recommendedProducts: recommendedProducts.results,
     },
   };
 };

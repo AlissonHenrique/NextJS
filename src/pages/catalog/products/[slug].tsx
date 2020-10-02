@@ -1,26 +1,50 @@
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { GetStaticPaths, GetStaticProps } from "next";
 
-import dynamic from "next/dynamic";
+import { client } from "@/lib/prismic";
+import { Document } from "prismic-javascript/types/documents";
 
-const AddToCardModal = dynamic(
-  () => import("../../../components/AddToCardModal"),
-  { loading: () => <p>Loading...</p>, ssr: false }
-);
-export default function Product() {
+import PrismicDOM from "prismic-dom";
+
+interface ProductProps {
+  product: Document;
+}
+export default function Product({ product }: ProductProps) {
   const router = useRouter();
-  const [isAddToCardVisible, setIsAddToCardVisible] = useState(false);
-  function handleAddToCard() {
-    setIsAddToCardVisible(true);
+  if (router.isFallback) {
+    return <p> Carregando...</p>;
   }
 
   return (
     <>
-      <h1>{router.query.slug}</h1>
+      <h1>{PrismicDOM.RichText.asText(product.data.title)}</h1>
 
-      <button onClick={handleAddToCard}>Add to card</button>
-
-      {isAddToCardVisible && <AddToCardModal />}
+      <div
+        dangerouslySetInnerHTML={{
+          __html: PrismicDOM.RichText.asHtml(product.data.description),
+        }}
+      ></div>
+      <img src={product.data.url} width="600" alt="camisa" />
+      <p>Price: ${product.data.price}</p>
     </>
   );
 }
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  return {
+    paths: [],
+    fallback: true,
+  };
+};
+
+export const getStaticProps: GetStaticProps<ProductProps> = async (context) => {
+  const { slug } = context.params;
+  const product = await client().getByUID("product", String(slug), {});
+
+  return {
+    props: {
+      product,
+    },
+    revalidate: 10,
+  };
+};
