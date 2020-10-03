@@ -53,10 +53,6 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
     Prismic.Predicates.at("document.type", "product"),
   ]);
 
-  console.log(recommendedProducts.results);
-  // const response = await fetch(`${process.env.API_URL}/recommended`);
-  // const recommendedProducts = await response.json();
-
   return {
     props: {
       recommendedProducts: recommendedProducts.results,
